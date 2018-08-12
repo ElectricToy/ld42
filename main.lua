@@ -51,11 +51,11 @@ local legAnimations = {
 			   sheet_pixels_to_sprite( 48, 80 ), 
 			   sheet_pixels_to_sprite( 32, 80 ),}, },
 
-	{ idle = { sheet_pixels_to_sprite( 0,  96 ) },
-	  run =  { sheet_pixels_to_sprite( 16, 96 ),
-			   sheet_pixels_to_sprite( 32, 96 ),
-			   sheet_pixels_to_sprite( 48, 96 ), 
-			   sheet_pixels_to_sprite( 32, 96 ), }, },
+	{ idle = { sheet_pixels_to_sprite( 0,  88 ) },
+	  run =  { sheet_pixels_to_sprite( 16, 88 ),
+			   sheet_pixels_to_sprite( 32, 88 ),
+			   sheet_pixels_to_sprite( 48, 88 ), 
+			   sheet_pixels_to_sprite( 32, 88 ), }, },
 }
 
 local facePoses = {
@@ -64,10 +64,10 @@ local facePoses = {
 	  sheet_pixels_to_sprite( 80, 80 ),
 	  sheet_pixels_to_sprite( 88, 80 ), },
 
-	{ sheet_pixels_to_sprite( 64, 96 ),
-	  sheet_pixels_to_sprite( 72, 96 ),
-	  sheet_pixels_to_sprite( 80, 96 ),
-	  sheet_pixels_to_sprite( 88, 96 ), },
+	{ sheet_pixels_to_sprite( 64, 88 ),
+	  sheet_pixels_to_sprite( 72, 88 ),
+	  sheet_pixels_to_sprite( 80, 88 ),
+	  sheet_pixels_to_sprite( 88, 88 ), },
 
 }
 
@@ -80,10 +80,19 @@ local pieceConfigurations = {
 		faceOffsetX = 4,
 		faceOffsetY = 4,
 		legOffsetX = 0 },
+
+	{ 	sprite = sheet_pixels_to_sprite( 16, 96 ),
+		wid = 2, hgt = 3,
+		cells = { true, false, true, false, true, true },
+		legAnimIndex = 1,
+		faceAnimIndex = 2,
+		faceOffsetX = 0,
+		faceOffsetY = 8,
+		legOffsetX = 0 },
 }
 
 local pieceFamilies = {
-	{	color = 0xffb9ca00
+	{	color = 0xffeeff00
 	},
 	{	color = 0xff0090ff
 	},
@@ -103,9 +112,10 @@ function createPiece( which, family )
 		family = family,
 		x = 0,
 		y = 0,
-		velx = 2,
+		velx = 0,
 		vely = 0,
 		animFrame = 0,
+		controllable = false,
 	}
 
 	return piece
@@ -140,12 +150,14 @@ end
 function updateAI( piece )
 	-- TODO
 
-	local power = 0.1
+	if piece.controllable then
+		local power = 0.1
 
-	if btn( 0 ) then impulse( piece, -power, 0 ) end
-	if btn( 1 ) then impulse( piece, power, 0 ) end
-	if btn( 2 ) then impulse( piece, 0, -power ) end
-	if btn( 3 ) then impulse( piece, 0, power ) end
+		if btn( 0 ) then impulse( piece, -power, 0 ) end
+		if btn( 1 ) then impulse( piece, power, 0 ) end
+		if btn( 2 ) then impulse( piece, 0, -power ) end
+		if btn( 3 ) then impulse( piece, 0, power ) end
+	end
 end
 
 function impulse( piece, accx, accy )
@@ -186,7 +198,7 @@ function drawPiece( piece )
 	spr( piece.config.sprite, piece.x, piece.y, piece.config.wid, piece.config.hgt, nil, nil, piece.family.color )
 
 	-- face
-	local faceSprite = facePoses[ 1 ][ 1 ]
+	local faceSprite = facePoses[ piece.config.faceAnimIndex ][ 1 ]
 	spr( faceSprite, piece.x + piece.config.faceOffsetX,
 					 piece.y + piece.config.faceOffsetY, 
 					 nil, nil,
@@ -199,7 +211,7 @@ function drawPiece( piece )
 	local legSprite = legAnim[ math.floor( piece.animFrame ) % #legAnim + 1 ]
 
 	spr( legSprite, piece.x + piece.config.legOffsetX,
-					piece.y + 8,
+					piece.y + piece.config.hgt * 8 - 8,
 					2, 1,
 					not idle and not pieceMovingRight( piece ), false )
 end
@@ -442,9 +454,15 @@ function createWorld( wid, hgt, startingRoomWid, startingRoomHgt )
 		startingRoomHgt )
 
 	-- todo
-	local piece = createPiece( 1, pieceFamilies[ 1 ] )
+	local piece = createPiece( 2, pieceFamilies[ 1 ] )
 	piece.x = wid//2*8
 	piece.y = hgt//2*8
+	piece.controllable = true
+	table.insert( world.pieces, piece )
+
+	piece = createPiece( 1, pieceFamilies[ 2 ] )
+	piece.x = wid//2*8 + 18
+	piece.y = hgt//2*8 + 4
 	table.insert( world.pieces, piece )
 
 	return world
@@ -519,22 +537,24 @@ function collidePieceCell( world, x, y )
 	local adjustX = 0
 	local adjustY = 0
 
+	local inset = 1
+
 	local cx = x + 4
 	local cy = y + 4
 
-	local ax, ay = collidePieceCellCorner( world, x, y, cx, cy )
+	local ax, ay = collidePieceCellCorner( world, x+inset, y+inset, cx, cy )
 	adjustX = adjustX + ax
 	adjustY = adjustY + ay
 
-	ax, ay = collidePieceCellCorner( world, x+8, y, cx, cy )
+	ax, ay = collidePieceCellCorner( world, x+8-inset, y+inset, cx, cy )
 	adjustX = adjustX + ax
 	adjustY = adjustY + ay
 
-	ax, ay = collidePieceCellCorner( world, x, y+8, cx, cy )
+	ax, ay = collidePieceCellCorner( world, x+inset, y+8-inset, cx, cy )
 	adjustX = adjustX + ax
 	adjustY = adjustY + ay
 
-	ax, ay = collidePieceCellCorner( world, x+8, y+8, cx, cy )
+	ax, ay = collidePieceCellCorner( world, x+8-inset, y+8-inset, cx, cy )
 	adjustX = adjustX + ax
 	adjustY = adjustY + ay
 
@@ -555,7 +575,6 @@ function pieceConstrainToWalls( world, piece )
 	local lefA, topA = piece.x, piece.y
 	local rgtA, botA = pieceBoundsWorld( piece )
 
-	-- TODO
 	for j = 1, piece.config.hgt do
 		for i = 1, piece.config.wid do
 			if piece.config.cells[ ndx( piece.config.wid, i, j ) ] then
@@ -565,7 +584,6 @@ function pieceConstrainToWalls( world, piece )
 			end
 		end
 	end
-
 end
 
 function collidePiecePair( a, b )
@@ -574,7 +592,36 @@ function collidePiecePair( a, b )
 	local lefB, topB = b.x, b.y
 	local rgtB, botB = pieceBoundsWorld( b )
 
-	-- TODO
+	if  lefA >= rgtB or
+		rgtA <= lefB or
+		topA >= botB or
+		botA <= topB then
+		return
+	end
+
+	-- todo
+
+	
+	local colliding = true 	-- todo
+	for j = 1, a.config.hgt do
+		for i = 1, a.config.wid do
+ 			if a.config.cells[ ndx( a.config.wid, i, j ) ] then
+ 			end
+ 		end
+ 	end
+
+ 	if colliding then
+ 		local scale = 1/8
+
+ 		local cax, cay = (lefA+rgtA)/2, (topA+botA)/2
+ 		local cbx, cby = (lefB+rgtB)/2, (topB+botB)/2
+
+ 		local ax, ay = ( cax - cbx ) * scale, ( cay - cby ) * scale,
+
+ 		adjustPiece( a, ax, ay )
+ 		adjustPiece( b, -ax, -ay )
+ 	end
+
 end
 
 function collidePieces( world )
@@ -601,7 +648,7 @@ function updateWorld( world )
 		updatePiece( piece )
 	end
 
-	for i = 1,1 do
+	for i = 1,10 do
 		iterateConstraints( world )
 	end
 end
