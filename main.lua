@@ -66,8 +66,8 @@ function roomBeautify( room )
 end
 
 function roomPaintEmptyRect( room, x, y, wid, hgt )
-	for j = 0, hgt-1 do
-		for i = 0, wid-1 do
+	for j = 1, hgt do
+		for i = 1, wid do
 			local cell = roomCell( room, x+i, y+j )
 			cell.empty = true
 			cell.sprite = CELL_EMPTY
@@ -81,6 +81,8 @@ function createWorld( wid, hgt, startingRoomWid, startingRoomHgt )
 	local world = {
 		cell_width = wid,
 		cell_height = hgt,
+		focusX = wid//2*8,
+		focusY = hgt//2*8,
 		room = createRoom( wid, hgt )
 	}
 
@@ -120,17 +122,21 @@ function drawRoom( room, tileOffsetX, tileOffsetY )
 	end
 end
 
+function moveCameraForWorldFocusPoint( focusX, focusY )
+	camera( world.focusX - screen_wid()//2, world.focusY - screen_hgt()//2 )
+end
+
 function drawWorld( world )
 
-	camera( 80, 40 )
+	moveCameraForWorldFocusPoint( world.focusX, world.focusY )
 
 	function drawLowerEnvironment()
 		function drawFloor()
 			local floorSprite = sheet_pixels_to_sprite( 128, 104 )
-			for row = 0, world.cell_height//4 do
-				local y = row * 8*4
-				for col = 0, world.cell_width//4 do
-					spr( floorSprite, col * 8*4, y, 4, 4 )
+			for row = 1, world.cell_height//4 do
+				local y = (row-1) * 8*4
+				for col = 1, world.cell_width//4 do
+					spr( floorSprite, (col-1) * 8*4, y, 4, 4 )
 				end
 			end
 		end
