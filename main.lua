@@ -85,9 +85,64 @@ function roomCell( room, x, y )
 	return room.cells[ index ] -- TODO
 end
 
+local cellSpriteForNeighbors = {	-- NESW
+	['XXXX'] = sheet_pixels_to_sprite( 160, 88 ),
+
+	[' XXX'] = sheet_pixels_to_sprite( 160, 96 ),
+	['X XX'] = sheet_pixels_to_sprite( 152, 88 ),
+	['XX X'] = sheet_pixels_to_sprite( 160, 80 ),
+	['XXX '] = sheet_pixels_to_sprite( 168, 88 ),
+
+	['XX  '] = sheet_pixels_to_sprite( 144, 80 ),
+	[' XX '] = sheet_pixels_to_sprite( 144, 96 ),
+	['  XX'] = sheet_pixels_to_sprite( 128, 96 ),
+	['X  X'] = sheet_pixels_to_sprite( 128, 80 ),
+
+	['X X '] = sheet_pixels_to_sprite( 152, 80 ),
+	[' X X'] = sheet_pixels_to_sprite( 168, 80 ),
+
+	['X   '] = sheet_pixels_to_sprite( 136, 80 ),
+	[' X  '] = sheet_pixels_to_sprite( 144, 88 ),
+	['  X '] = sheet_pixels_to_sprite( 136, 96 ),
+	['   X'] = sheet_pixels_to_sprite( 128, 88 ),
+
+	['    '] = sheet_pixels_to_sprite( 136, 88 ),
+}
+
 function roomBeautify( room )
 	function fixupCellSprites( room )
-		-- TODO
+		function cellNeighborString( room, x, y )
+			function charForNeighbor( i, j )
+				local neighbor = roomCell( room, x + i, y + j )
+				local neighborChar = 'X'
+				if neighbor ~= nil then
+					neighborChar = neighbor.empty and ' ' or 'X'
+				end
+
+				return neighborChar
+			end
+
+			local neighborString = ''
+			neighborString = neighborString .. charForNeighbor(  0, -1 )
+			neighborString = neighborString .. charForNeighbor(  1,  0 )
+			neighborString = neighborString .. charForNeighbor(  0,  1 )
+			neighborString = neighborString .. charForNeighbor( -1,  0 )
+			return neighborString
+		end
+
+		function beautifyCell( room, x, y )
+			local cell = roomCell( room, x, y )
+			if cell.empty then
+				local str = cellNeighborString( room, x, y )
+				cell.sprite = cellSpriteForNeighbors[ str ] or CELL_EMPTY
+			end
+		end
+
+		for y = 1, room.hgt do
+			for x = 1, room.wid do
+				beautifyCell( room, x, y )
+			end
+		end
 	end
 
 	function addCellShadows( room )
@@ -303,8 +358,7 @@ end
 
 function drawDebug()
 	-- print( tostring( mousex ) .. ',' .. tostring( mousey ) .. '::' .. tostring( placeableRoom ))
-	print( tostring( world.focusX ) .. ',' .. tostring( world.focusY ))
-
+	-- print( tostring( world.focusX ) .. ',' .. tostring( world.focusY ))
 
 	for i,message in ipairs( debugMessages ) do
 		print( message )
