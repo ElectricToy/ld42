@@ -20,6 +20,9 @@ function length( x, y )
 	return math.sqrt( x * x + y * y )
 end
 
+function sign( x )
+	return x < 0 and -1 or ( x > 0 and 1 or 0 )
+end
 
 function clamp( x, minimum, maximum )
 	return math.min( maximum, math.max( x, minimum ))
@@ -154,7 +157,7 @@ function updateDynamics( piece )
 	local drag = 0.05
 	impulse( piece, piece.velx * -drag, piece.vely * -drag )
 
-	local limit = 1
+	local limit = 0.5
 	local speed = pieceSpeed( piece )
 	if speed > limit then
 		piece.velx = piece.velx / speed * limit
@@ -508,8 +511,8 @@ function collidePieceCellCorner( world, x, y, cx, cy )
 	local cell = worldCellAtWorldLoc( world, x, y )
 	if cell.empty then return 0, 0 end
 
-	local scale = 1/32
-	return ( cx - x ) * scale, ( cy - y ) * scale
+	local scale = 1/8
+	return sign( cx - x ) * scale, sign( cy - y ) * scale
 end
 
 function collidePieceCell( world, x, y )
