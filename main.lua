@@ -10,6 +10,13 @@ local mousey = -1
 
 -- UTILITY
 
+local debugMessages = {}
+
+function trace( message )
+	table.insert( debugMessages, message )
+end
+
+
 function clamp( x, minimum, maximum )
 	return math.min( maximum, math.max( x, minimum ))
 end
@@ -31,7 +38,7 @@ local CELL_EMPTY = sheet_pixels_to_sprite( 136, 88 )		-- 369
 -- CLASSES
 
 function createRoomCell()
-	return { empty = false, sprite = 0 }
+	return { empty = false, sprite = 0, shadowSprites = {} }
 end
 
 function ndx( wid, x, y )
@@ -109,27 +116,27 @@ local cellSpriteForNeighbors = {	-- NESW
 	['    '] = sheet_pixels_to_sprite( 136, 88 ),
 }
 
-function roomBeautify( room )
-	function fixupCellSprites( room )
-		function cellNeighborString( room, x, y )
-			function charForNeighbor( i, j )
-				local neighbor = roomCell( room, x + i, y + j )
-				local neighborChar = 'X'
-				if neighbor ~= nil then
-					neighborChar = neighbor.empty and ' ' or 'X'
-				end
-
-				return neighborChar
-			end
-
-			local neighborString = ''
-			neighborString = neighborString .. charForNeighbor(  0, -1 )
-			neighborString = neighborString .. charForNeighbor(  1,  0 )
-			neighborString = neighborString .. charForNeighbor(  0,  1 )
-			neighborString = neighborString .. charForNeighbor( -1,  0 )
-			return neighborString
+function cellNeighborString( room, x, y )
+	function charForNeighbor( i, j )
+		local neighbor = roomCell( room, x + i, y + j )
+		local neighborChar = 'X'
+		if neighbor ~= nil then
+			neighborChar = neighbor.empty and ' ' or 'X'
 		end
 
+		return neighborChar
+	end
+
+	local neighborString = ''
+	neighborString = neighborString .. charForNeighbor(  0, -1 )
+	neighborString = neighborString .. charForNeighbor(  1,  0 )
+	neighborString = neighborString .. charForNeighbor(  0,  1 )
+	neighborString = neighborString .. charForNeighbor( -1,  0 )
+	return neighborString
+end
+
+function roomBeautify( room )
+	function fixupCellSprites( room )
 		function beautifyCell( room, x, y )
 			local cell = roomCell( room, x, y )
 			if cell.empty then
@@ -146,7 +153,39 @@ function roomBeautify( room )
 	end
 
 	function addCellShadows( room )
-		-- TODO
+		function fixupCellShadows( room, x, y )
+			local cell = roomCell( room, x, y )
+			if not cell.empty then
+				return
+			end
+
+			local str = cellNeighborString( room, x, y )
+			cell.shadowSprites = {}
+
+			if str:sub(1,1) == 'X' and str:sub(4,4) == 'X' then
+					table.insert( cell.shadowSprites, sheet_pixels_to_sprite( 224, 104 ))
+			else
+				if str:sub(1,1) == 'X' then
+					table.insert( cell.shadowSprites, sheet_pixels_to_sprite( 224, 88 ))
+				end
+				if str:sub(2,2) == 'X' then
+					table.insert( cell.shadowSprites, sheet_pixels_to_sprite( 200, 88 ))
+				end
+				if str:sub(3,3) == 'X' then
+					table.insert( cell.shadowSprites, sheet_pixels_to_sprite( 224, 80 ))
+				end
+				if str:sub(4,4) == 'X' then
+					table.insert( cell.shadowSprites, sheet_pixels_to_sprite( 208, 88 ))
+				end
+			end
+			-- trace( str .. ' ' .. tostring( #cell.shadowSprites ))
+		end
+
+		for y = 1, room.hgt do
+			for x = 1, room.wid do
+				fixupCellShadows( room, x, y )
+			end
+		end
 	end
 
 	fixupCellSprites( room )
@@ -301,6 +340,10 @@ end
 
 function drawCell( cell, x, y )
 	spr( cell.sprite, x, y )
+
+	for _, sprite in pairs( cell.shadowSprites ) do
+		spr( sprite, x, y )
+	end
 end
 
 function drawRoom( room )
@@ -348,12 +391,6 @@ function drawWorld( world )
 	drawCharacters()
 
 	camera( 0, 0 )
-end
-
-local debugMessages = {}
-
-function trace( message )
-	table.insert( debugMessages, message )
 end
 
 function drawDebug()
