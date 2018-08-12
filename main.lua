@@ -199,6 +199,41 @@ end
 local world = createWorld( 32, 32, 8, 6 )
 local placeableRoom = createPlayerPlaceableRoom()
 
+
+local worldAtDragStartX = nil
+local worldAtDragStartY = nil
+local worldDragStartX = nil
+local worldDragStartY = nil
+function worldBeginTouch( x, y )
+	worldDragStartX, worldDragStartY = x, y
+	worldAtDragStartX, worldAtDragStartY = world.focusX, world.focusY
+end 
+
+function worldMoveTouch( x, y )
+		local worldwid = world.cell_width*8
+		local worldhgt = world.cell_height*8
+
+	local excessX = ( worldwid - screen_wid() ) // 2
+	local excessY = ( worldhgt - screen_hgt() ) // 2
+
+	if excessX > 0 then
+		world.focusX = worldAtDragStartX - ( x - worldDragStartX )
+		world.focusX = clamp( world.focusX, worldwid//2 - excessX, worldwid//2 + excessX )
+	end
+
+
+	if excessY > 0 then
+		world.focusY = worldAtDragStartY - ( y - worldDragStartY )
+		world.focusY = clamp( world.focusY, worldhgt//2 - excessY, worldhgt//2 + excessY )
+	end
+
+end 
+
+function worldEndTouch( x, y )
+	worldDragStartX = nil
+	worldDragStartY = nil
+end 
+
 -- UPDATE
 
 function update()
@@ -267,7 +302,9 @@ function trace( message )
 end
 
 function drawDebug()
-	print( tostring( mousex ) .. ',' .. tostring( mousey ) .. '::' .. tostring( placeableRoom ))
+	-- print( tostring( mousex ) .. ',' .. tostring( mousey ) .. '::' .. tostring( placeableRoom ))
+	print( tostring( world.focusX ) .. ',' .. tostring( world.focusY ))
+
 
 	for i,message in ipairs( debugMessages ) do
 		print( message )
@@ -341,6 +378,8 @@ function beginTouch( x, y )
 	-- -- room area?
 	if x <= 44 and y <= 44 then
 		beginTouchPlacementRoom( x, y )
+	else
+		worldBeginTouch( x, y )
 	end
 end
 
@@ -350,6 +389,8 @@ function moveTouch( x, y )
 	
 	if dragStartX then
 		movePlacementRoom( x, y )
+	else
+		worldMoveTouch( x, y )
 	end
 end
 
@@ -358,8 +399,9 @@ function releaseTouch( x, y )
 	
 	if dragStartX then
 		dropPlacementRoom( x, y )
+	else
+		worldEndTouch( x, y )
 	end
-	-- TODO
 	
 	isTouchDown = false
 end
