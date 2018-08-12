@@ -107,8 +107,13 @@ function createPiece( which, family )
 	return piece
 end
 
-function pieceBounds( piece )
-	-- TODO
+function pieceBoundsLocal( piece )
+	return piece.config.wid * 7, piece.config.hgt * 7
+end
+
+function pieceBoundsWorld( piece )
+	local wid, hgt = pieceBoundsLocal( piece )
+	return piece.x + wid, piece.y + hgt
 end
 
 function pieceIdle( piece )
@@ -486,9 +491,49 @@ function worldEndTouch( x, y )
 	worldDragStartY = nil
 end 
 
+function pieceConstrainToWalls( world, piece )
+	local lefA, topA = piece.x//8, piece.y//8
+	local rgtA, botA = pieceBoundsWorld( piece )//8
+
+	-- TODO
+
+end
+
+function collidePiecePair( a, b )
+	local lefA, topA = a.x, a.y
+	local rgtA, botA = pieceBoundsWorld( a )
+	local lefB, topB = b.x, b.y
+	local rgtB, botB = pieceBoundsWorld( b )
+
+	-- TODO
+end
+
+function collidePieces( world )
+	for i = 1, #world.pieces - 1 do
+		local pieceI = world.pieces[ i ]
+		for j = i + 1, #world.pieces do
+			local pieceJ = world.pieces[ j ]
+
+			collidePiecePair( pieceI, pieceJ )
+		end
+	end
+end
+
+function iterateConstraints( world )
+	collidePieces( world )
+
+	for _, piece in pairs( world.pieces ) do
+		pieceConstrainToWalls( world, piece )
+	end
+end
+
 function updateWorld( world )
 	for _, piece in pairs( world.pieces ) do
 		updatePiece( piece )
+	end
+
+	for i = 1,1 do
+		iterateConstraints( world )
 	end
 end
 
