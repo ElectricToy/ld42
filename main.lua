@@ -345,26 +345,39 @@ function draw()
 end
 
 
+local roomAtDragStartX = nil
+local roomAtDragStartY = nil
 local dragStartX = nil
 local dragStartY = nil
 function beginTouchPlacementRoom( x, y )
-	dragStartX = x - placeableRoom.x
-	dragStartY = y - placeableRoom.y
+	roomAtDragStartX = placeableRoom.x
+	roomAtDragStartY = placeableRoom.y
+	dragStartX = x
+	dragStartY = y
 end
 
 function movePlacementRoom( x, y )
-	placeableRoom.x = x - dragStartX
-	placeableRoom.y = y - dragStartY
+	placeableRoom.x = roomAtDragStartX - ( dragStartX - x )
+	placeableRoom.y = roomAtDragStartY - ( dragStartY - y )
 end
 
 function dropPlacementRoom( x, y )
 
-	worldQuantizeObjectFromUI( world, placeableRoom )
+	if x <= 60 and y <= 60 then
+		-- abort
+		placeableRoom.x = roomAtDragStartX
+		placeableRoom.y = roomAtDragStartY
+	else
 
-	worldAddRoom( world, placeableRoom )
+		worldQuantizeObjectFromUI( world, placeableRoom )
 
-	placeableRoom = createPlayerPlaceableRoom()
+		worldAddRoom( world, placeableRoom )
 
+		placeableRoom = createPlayerPlaceableRoom()
+	end
+
+	roomAtDragStartX = nil
+	roomAtDragStartY = nil
 	dragStartX = nil
 	dragStartY = nil
 end
