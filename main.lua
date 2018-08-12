@@ -71,6 +71,7 @@ local facePoses = {
 local pieceConfigurations = {
 	{ 	sprite = sheet_pixels_to_sprite( 0, 96 ),
 		wid = 2, hgt = 2,
+		cells = { true, true, true, true },
 		legAnimIndex = 1,
 		faceAnimIndex = 1,
 		faceOffsetX = 4,
@@ -153,6 +154,13 @@ function updateDynamics( piece )
 	local drag = 0.05
 	impulse( piece, piece.velx * -drag, piece.vely * -drag )
 
+	local limit = 1
+	local speed = pieceSpeed( piece )
+	if speed > limit then
+		piece.velx = piece.velx / speed * limit
+		piece.vely = piece.vely / speed * limit
+	end
+
 	piece.x = piece.x + piece.velx
 	piece.y = piece.y + piece.vely
 end
@@ -182,14 +190,15 @@ function drawPiece( piece )
 					 false )
 
 	-- legs
+	local idle = pieceIdle( piece )
 	local legAnims = legAnimations[ piece.config.legAnimIndex ]
-	local legAnim = pieceIdle( piece ) and legAnims.idle or legAnims.run
+	local legAnim = idle and legAnims.idle or legAnims.run
 	local legSprite = legAnim[ math.floor( piece.animFrame ) % #legAnim + 1 ]
 
 	spr( legSprite, piece.x + piece.config.legOffsetX,
 					piece.y + 8,
 					2, 1,
-					not pieceMovingRight( piece ), false )
+					not idle and not pieceMovingRight( piece ), false )
 end
 
 
@@ -491,11 +500,68 @@ function worldEndTouch( x, y )
 	worldDragStartY = nil
 end 
 
+function worldCellAtWorldLoc( world, x, y )
+	return roomCell( world.room, x//8, y//8 )
+end
+
+function collidePieceCellCorner( world, x, y, cx, cy )
+	local cell = worldCellAtWorldLoc( world, x, y )
+	if cell.empty then return 0, 0 end
+
+	local scale = 1/32
+	return ( cx - x ) * scale, ( cy - y ) * scale
+end
+
+function collidePieceCell( world, x, y )
+	local adjustX = 0
+	local adjustY = 0
+
+	local cx = x + 4
+	local cy = y + 4
+
+	local ax, ay = collidePieceCellCorner( world, x, y, cx, cy )
+	adjustX = adjustX + ax
+	adjustY = adjustY + ay
+
+	ax, ay = collidePieceCellCorner( world, x+8, y, cx, cy )
+	adjustX = adjustX + ax
+	adjustY = adjustY + ay
+
+	ax, ay = collidePieceCellCorner( world, x, y+8, cx, cy )
+	adjustX = adjustX + ax
+	adjustY = adjustY + ay
+
+	ax, ay = collidePieceCellCorner( world, x+8, y+8, cx, cy )
+	adjustX = adjustX + ax
+	adjustY = adjustY + ay
+
+	return adjustX, adjustY
+end
+
+function adjustPiece( piece, x ,y )
+	if x then
+		piece.x = piece.x + x
+	end
+
+	if y then
+		piece.y = piece.y + y
+	end
+end
+
 function pieceConstrainToWalls( world, piece )
-	local lefA, topA = piece.x//8, piece.y//8
-	local rgtA, botA = pieceBoundsWorld( piece )//8
+	local lefA, topA = piece.x, piece.y
+	local rgtA, botA = pieceBoundsWorld( piece )
 
 	-- TODO
+	for j = 1, piece.config.hgt do
+		for i = 1, piece.config.wid do
+			if piece.config.cells[ ndx( piece.config.wid, i, j ) ] then
+				local adjustX, adjustY = collidePieceCell( world, lefA + (i-1) * 8, topA + (j-1) * 8 )
+
+				adjustPiece( piece, adjustX, adjustY )
+			end
+		end
+	end
 
 end
 
