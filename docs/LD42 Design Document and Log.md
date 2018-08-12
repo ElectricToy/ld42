@@ -69,11 +69,11 @@ Characters walk on their own and align themselves with the grid. They look and b
 
 #### Tasks
 
-- room logic
-- room visuals (grid floor, walls, isometric?, exterior "dirt")
+X room logic
+X room visuals (grid floor, walls, isometric?, exterior "dirt")
 - room construction (change; debris particles)
-- player construction control
-- view dragging
+X player construction control
+X view dragging
 
 - basic piece construction
 - piece wandering and AI

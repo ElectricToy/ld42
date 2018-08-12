@@ -16,6 +16,10 @@ function trace( message )
 	table.insert( debugMessages, message )
 end
 
+function length( x, y )
+	return math.sqrt( x * x + y * y )
+end
+
 
 function clamp( x, minimum, maximum )
 	return math.min( maximum, math.max( x, minimum ))
@@ -36,6 +40,153 @@ end
 local CELL_EMPTY = sheet_pixels_to_sprite( 136, 88 )		-- 369
 
 -- CLASSES
+
+local legAnimations = {
+	{ idle = { sheet_pixels_to_sprite( 0,  80 ) },
+	  run =  { sheet_pixels_to_sprite( 16, 80 ),
+			   sheet_pixels_to_sprite( 32, 80 ),
+			   sheet_pixels_to_sprite( 48, 80 ), 
+			   sheet_pixels_to_sprite( 32, 80 ),}, },
+
+	{ idle = { sheet_pixels_to_sprite( 0,  96 ) },
+	  run =  { sheet_pixels_to_sprite( 16, 96 ),
+			   sheet_pixels_to_sprite( 32, 96 ),
+			   sheet_pixels_to_sprite( 48, 96 ), 
+			   sheet_pixels_to_sprite( 32, 96 ), }, },
+}
+
+local facePoses = {
+	{ sheet_pixels_to_sprite( 64, 80 ),
+	  sheet_pixels_to_sprite( 72, 80 ),
+	  sheet_pixels_to_sprite( 80, 80 ),
+	  sheet_pixels_to_sprite( 88, 80 ), },
+
+	{ sheet_pixels_to_sprite( 64, 96 ),
+	  sheet_pixels_to_sprite( 72, 96 ),
+	  sheet_pixels_to_sprite( 80, 96 ),
+	  sheet_pixels_to_sprite( 88, 96 ), },
+
+}
+
+local pieceConfigurations = {
+	{ 	sprite = sheet_pixels_to_sprite( 0, 96 ),
+		wid = 2, hgt = 2,
+		legAnimIndex = 1,
+		faceAnimIndex = 1,
+		faceOffsetX = 4,
+		faceOffsetY = 4,
+		legOffsetX = 0 },
+}
+
+local pieceFamilies = {
+	{	color = 0xffb9ca00
+	},
+	{	color = 0xff0090ff
+	},
+	{	color = 0xffff0072
+	},
+	{	color = 0xff00ff8a
+	},
+}
+
+function createPiece( which, family )
+	local config = pieceConfigurations[ which ]
+	assert( family )
+	assert( config )
+
+	local piece = {
+		config = config,
+		family = family,
+		x = 0,
+		y = 0,
+		velx = 2,
+		vely = 0,
+		animFrame = 0,
+	}
+
+	return piece
+end
+
+function pieceBounds( piece )
+	-- TODO
+end
+
+function pieceIdle( piece )
+	return pieceSpeed( piece ) < 0.1
+end
+
+function pieceMovingRight( piece )
+	return piece.velx > 0
+end
+
+function pieceFacePose( piece )
+	-- TODO
+	return 1
+end
+
+function pieceSpeed( piece )
+	return length( piece.velx, piece.vely )
+end
+
+function updateAI( piece )
+	-- TODO
+
+	local power = 0.1
+
+	if btn( 0 ) then impulse( piece, -power, 0 ) end
+	if btn( 1 ) then impulse( piece, power, 0 ) end
+	if btn( 2 ) then impulse( piece, 0, -power ) end
+	if btn( 3 ) then impulse( piece, 0, power ) end
+end
+
+function impulse( piece, accx, accy )
+	piece.velx = piece.velx + accx
+	piece.vely = piece.vely + accy
+end
+
+function updateDynamics( piece )
+	local drag = 0.05
+	impulse( piece, piece.velx * -drag, piece.vely * -drag )
+
+	piece.x = piece.x + piece.velx
+	piece.y = piece.y + piece.vely
+end
+
+function updateAnim( piece )
+	-- TODO
+	local speed = pieceSpeed( piece )
+	piece.animFrame = piece.animFrame + speed * 0.3
+end
+
+function updatePiece( piece )
+	updateAI( piece )
+
+	updateDynamics( piece )
+
+	updateAnim( piece )
+end
+
+function drawPiece( piece )
+	spr( piece.config.sprite, piece.x, piece.y, piece.config.wid, piece.config.hgt, nil, nil, piece.family.color )
+
+	-- face
+	local faceSprite = facePoses[ 1 ][ 1 ]
+	spr( faceSprite, piece.x + piece.config.faceOffsetX,
+					 piece.y + piece.config.faceOffsetY, 
+					 nil, nil,
+					 false )
+
+	-- legs
+	local legAnims = legAnimations[ piece.config.legAnimIndex ]
+	local legAnim = pieceIdle( piece ) and legAnims.idle or legAnims.run
+	local legSprite = legAnim[ math.floor( piece.animFrame ) % #legAnim + 1 ]
+
+	spr( legSprite, piece.x + piece.config.legOffsetX,
+					piece.y + 8,
+					2, 1,
+					not pieceMovingRight( piece ), false )
+end
+
 
 function createRoomCell()
 	return { empty = false, sprite = 0, shadowSprites = {} }
@@ -261,6 +412,7 @@ function createWorld( wid, hgt, startingRoomWid, startingRoomHgt )
 		focusX = wid//2*8,
 		focusY = hgt//2*8,
 		room = createRoom( wid, hgt ),
+		pieces = {},
 	}
 
 	assert( world and world.room and world.room.cells )
@@ -271,6 +423,12 @@ function createWorld( wid, hgt, startingRoomWid, startingRoomHgt )
 		hgt // 2 - startingRoomHgt//2, 
 		startingRoomWid, 
 		startingRoomHgt )
+
+	-- todo
+	local piece = createPiece( 1, pieceFamilies[ 1 ] )
+	piece.x = wid//2*8
+	piece.y = hgt//2*8
+	table.insert( world.pieces, piece )
 
 	return world
 end
@@ -328,12 +486,18 @@ function worldEndTouch( x, y )
 	worldDragStartY = nil
 end 
 
+function updateWorld( world )
+	for _, piece in pairs( world.pieces ) do
+		updatePiece( piece )
+	end
+end
+
 -- UPDATE
 
 function update()
 	updateInput()
 
-	-- TODO
+	updateWorld( world )
 end
 
 -- DRAWRING
@@ -384,7 +548,9 @@ function drawWorld( world )
 	end
 
 	function drawCharacters()
-		-- TODO
+		for _, piece in pairs( world.pieces ) do
+			drawPiece( piece )
+		end
 	end
 
 	drawLowerEnvironment()
@@ -396,6 +562,8 @@ end
 function drawDebug()
 	-- print( tostring( mousex ) .. ',' .. tostring( mousey ) .. '::' .. tostring( placeableRoom ))
 	-- print( tostring( world.focusX ) .. ',' .. tostring( world.focusY ))
+
+	print( tostring( #world.pieces ))
 
 	for i,message in ipairs( debugMessages ) do
 		print( message )
