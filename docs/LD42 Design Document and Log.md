@@ -44,6 +44,62 @@ I'm a little bummed that I just have these TWO ideas, though they're both good. 
 
 One idea would be a sort of **dwarf-fortress, but where both rooms and _people_ are tetris-shaped**. People belonging to the same family have the same color, and want to be together in the same room: they insist on being at least one space away from other family members, and maybe pose some other cost too. So you need to build enough rooms for families to live in separate rooms, but each room costs. Pieces are cute: tetris pieces with nice outlines and shading, but eyeballs and little legs. Maybe "comfort" is the positive commodity (the score) and money is the negative commodity (the cost). Money controls what you can do; comfort judges how well you do it. When comfort reaches zero, you lose. Babies are slowly born. They always start 1x1 in size (despite shape), but pop up to their full size after ~20 seconds. This seems like a reasonable idea. Not too difficult maybe. Probably needs touch/mouse. Not too easy either. But I'm not in love with it.
 
+### Flow
+
+1. Level begins, counting down X population "Babies still to be born". Initial "rooms" are shown with initial population of families of different colors.
+2. New babies are born periodically in real time and take up space. Comfort meter responds to current "feelings" of individuals. If meter hits zero, game over. Individuals move themselves around in simple ways to try to find the best fit.
+3. The player can:
+    a. Pick up individuals and drop them.
+    b. Place new rooms. These are either time-limited or cost-limited (or both). New rooms "chop" into the terrain, having no effect on already-chopped areas.
+4. When all the babies are full-size, the game ends after maybe 5 second countdown; if comfort meter is still okay, level won.
+5. Goto step 1.
+
+"Comfort" is a major question. For each individual it's a function of:
+
+- For each of my edges that is touching family, I like it.
+- For each of my edges that is touching a wall, it's fine.
+- For each of my edges that is touching space, I mildly dislike it.
+- I strongly dislike having line-of-site from any of my tiles to a non-family member (different colored title), with dislike inversely proportionate to distance.
+
+So, the ideal "pack" is for a family to be perfectly packed into a room that is exactly their total shape, with each other family in the same situation, with walls in between all families (but hallways so that pieces can get around)
+
+The worst possible pack is to for each piece to be maximally adjacent to opposite-colored pieces.
+
+Characters walk on their own and align themselves with the grid. They look and blink. They have facial expressions to show their individual comfort level, and possibly their border shows it too.
+
+#### Tasks
+
+- room logic
+- room visuals (grid floor, walls, isometric?, exterior "dirt")
+- room construction (change; debris particles)
+- player construction control
+- view dragging
+
+- basic piece construction
+- piece wandering and AI
+- piece line of site
+- piece "comfort" calculation
+- player piece control
+- piece visuals
+- piece faces
+- piece legs with idle, left, right animations (and possibly up/down)
+- piece comfort display
+- piece birth
+- piece growth
+- piece birth counting
+- comfort meter
+
+- set level configurations
+
+- level begin
+- level end
+- title screen
+- game end
+
+- sfx
+- music
+
+
 ### Elite with backpack (Running Around In Space)
 
 An elite clone recommends itself for fun and simplicity.
@@ -53,6 +109,9 @@ An elite clone recommends itself for fun and simplicity.
 - Your ship has a hold of a certain grid size.
 - You must position everything you buy into the hold. Commodities are tetris-shaped.
 - You can toss things out from the hold for a very cheap payout.
+
+
+#### Flow 
 
 So, the game is a simple decision loop:
 
@@ -84,3 +143,8 @@ Cool warp animation for travel.
 #### Questions
 
 Flying between planets is just a warp animation, or do you actually navigate there? Navigating would only be interesting if the path was interesting: avoiding clouds or asteroids for example.
+
+
+# DECISION
+
+I think I should choose the game based on the simplicity/ease of finishing on time. Let's think through the implementation of each.
